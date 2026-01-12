@@ -5,12 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.v1 import api_v1
+from app.gsi.activity_score.router import router as activity_score_router
 from app.config import get_settings
 
 settings = get_settings()
 
 app = FastAPI(title=settings.project_name, version=settings.app_version)
 app.include_router(api_v1, prefix="/api/v1")
+app.include_router(activity_score_router, prefix="/api/v1")
 
 allow_origins = [o.strip() for o in settings.allow_origins.split(",") if o.strip()]
 print(f"Allowing origins: {allow_origins}")
@@ -31,9 +33,8 @@ app.add_middleware(
 async def info() -> JSONResponse:
     return JSONResponse(
         {
-            "status": "ok",
+            "status": "OK",
             "env": settings.env,
             "app_name": settings.project_name,
-            "app_version": settings.app_version,
         }
     )

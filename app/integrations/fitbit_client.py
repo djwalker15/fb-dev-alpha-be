@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import os
 import base64
 import hashlib
 import secrets
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, Dict, Optional
+from app.integrations.secret_store import SecretStore
 
 import httpx
 
@@ -36,6 +38,35 @@ class FitbitTokens:
     expires_in: int
     scope: str
     user_id: str
+
+
+
+PROJECT_ID = os.environ["PROJECT_ID"]
+REDIRECT_URI = os.environ["FITBIT_REDIRECT_URI"]
+secrets_store = SecretStore(PROJECT_ID)
+
+
+def get_fitbit_client() -> FitbitClient:
+    client_id = secrets_store.read("fitbit_client_id").strip()
+    if not client_id:
+        raise HTTPException(status_code=500, detail="fitbit_client_id secret is empty")
+    return FitbitClient(client_id=client_id, redirect_uri=REDIRECT_URI)
+
+async def get_fresh_access_token() -> str:
+    """
+    Always refresh using the stored refresh token.
+    This avoids having to persist an access token at all.
+    """
+    refresh_token = secrets_store.read("fitbit_refresh_token").strip()
+    if not refresh_token:
+        raise HTTPException(status_code=400, detail="Fitbit not connected yet. Run /auth/start.")
+
+    client = get_fitbit_client()
+    tokens = await client.refresh_tokens(refresh_token)
+
+    # Rotate refresh token (critical)
+    secrets_store.write_new_version("fitbit_refresh_token", tokens.refresh_token)
+    return tokens.access_token
 
 
 class FitbitClient:
@@ -124,6 +155,9 @@ class FitbitClient:
 
     async def get_sleep(self, access_token: str, day: date) -> Dict[str, Any]:
         return await self.api_get(access_token, f"/1.2/user/-/sleep/date/{day.isoformat()}.json")
+
+    async def get_active_zone_minutes(self, access_token: str, day: date) -> Dict[str, Any]:
+        return await self.api_get(access_token, f"/1/user/-/activities/active-zone-minutes/date/{day.isoformat()}/1d.json")
 
     async def get_heartrate_day(self, access_token: str, day: date) -> Dict[str, Any]:
         return await self.api_get(access_token, f"/1/user/-/activities/heart/date/{day.isoformat()}/1d.json")

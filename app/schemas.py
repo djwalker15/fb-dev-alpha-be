@@ -1,11 +1,11 @@
 # app/schemas.py
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, date
 from typing import Generic, TypeVar
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, NonNegativeInt
 
 # ---------------------------------------------------------
 # Common base config
