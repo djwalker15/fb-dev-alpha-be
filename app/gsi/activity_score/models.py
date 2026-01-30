@@ -20,18 +20,14 @@ class FitbitDailySummary(BaseModel):
 
 
 class ActivityScoreBreakdown(BaseModel):
-    version: Literal["v2.1"] = "v2.1"
-    floor_point: int
-    steps_points: int
-    azm_points: int
-    standard_bonus: int
-    raw_total: int
-    capped_total: int
+    version: str
+    steps_points: float
+    azm_points: float
 
 
 class ActivityScoreResult(BaseModel):
     date: date
-    score: int = Field(ge=0, le=10)
+    score: float = Field(ge=0, le=10)
     breakdown: ActivityScoreBreakdown
     steps: int
     active_zone_minutes: int
